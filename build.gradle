@@ -1,0 +1,114 @@
+plugins {
+  id 'java'
+}
+
+// The original version was built against JavaVersion.VERSION_1_4, but Gradle doesn't go that low.
+sourceCompatibility = JavaVersion.VERSION_1_6
+targetCompatibility = JavaVersion.VERSION_1_6
+
+
+task downloadArchive() {
+	def tmpFolder = new File('tmp')
+	if (!tmpFolder.exists()) {
+		mkdir('tmp')
+	}
+	def archive = new File('tmp/pedagogica_02_18_05.zip')
+	if (!archive.exists()) {
+		exec {
+			workingDir "tmp"
+			executable 'wget'
+			args 'https://sourceforge.net/projects/pedagogica/files/OldFiles/pedagogica_02_18_05.zip/download', '-O', 'pedagogica_02_18_05.zip'
+		}
+	}
+	else {
+		println "Archive already exists. Skipping download."
+	}
+}
+
+def pedagogicaFolderPath = 'tmp/pedagogica_02_18_05/'
+
+task extractArchive(type: Copy) {
+	dependsOn.downloadArchive
+	
+	def pedagogicaFolder = new File(pedagogicaFolderPath)
+	if (!pedagogicaFolder.exists()) {
+		mkdir(pedagogicaFolderPath)
+	}
+
+	def zipFile = file('tmp/pedagogica_02_18_05.zip')
+	def outputDir = file(pedagogicaFolderPath)
+
+	from zipTree(zipFile)
+	into outputDir
+}
+
+def libs = [
+	[name: 'client.jar', source: 'Pedagogica/lib/'],
+	[name: 'domainsupport.jar', source: 'Pedagogica/lib/'],
+	[name: 'easl.jar', source: 'Pedagogica/testworkspace/Main/lib/'],
+	[name: 'js.jar', source: 'Pedagogica/testworkspace/Main/lib/'],
+	[name: 'pedagogica.jar', source: 'Pedagogica/lib/'],
+	[name: 'shared.jar', source: 'Pedagogica/lib/'],
+	[name: 'util.jar', source: 'Pedagogica/lib/'],
+	[name: 'workspace.jar', source: 'Pedagogica/lib/'],
+	[name: 'xerces.jar', source: 'Pedagogica/thirdparty/']
+]
+
+def libFolderPath = 'lib/'
+
+task copyLibs() {
+	dependsOn.extractArchive
+
+	libs.each { lib ->
+		def destFile = new File(libFolderPath + lib.name)
+		if (!destFile.exists()) {
+			def sourceFile = new File (pedagogicaFolderPath + lib.source + lib.name)
+			if (!sourceFile.exists()) {
+				println "Cannot find file: ${sourceFile}. Skipping."
+			}
+			else {
+				copy {
+					from sourceFile
+					into libFolderPath
+				}
+			}
+		}
+		else {
+			println "${lib.name} already exists in ${libFolderPath}. Skipping copy."
+		}
+	}
+}
+
+build.dependsOn tasks.copyLibs
+
+
+dependencies {
+	implementation files('lib/client.jar')
+    implementation files('lib/domainsupport.jar')
+    implementation files('lib/easl.jar')
+    implementation files('lib/js.jar')
+    implementation files('lib/pedagogica.jar')
+    implementation files('lib/shared.jar')
+    implementation files('lib/util.jar')
+    implementation files('lib/workspace.jar')
+    implementation files('lib/xerces.jar')
+}
+
+jar {
+	duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    manifest {
+    	// The Main-Class tells the jar which class to load when you run java -jar biologica-neo.jar
+    	// Aside from the default, there are several others to try. If you build the jar with those
+    	// as the Main-Class, it will load them instead! Comment out all but one.
+        attributes 'Main-Class': 'com.gabriel.ui.AllInOneWindow' // Updated AllInOneWindow with updated/new features!
+        // attributes 'Main-Class': 'com.gabriel.ui.EnvironmentWindow' // An unfinished environment simulator that I completed!
+        // attributes 'Main-Class': 'org.concord.biologica.test.TestWindow' // Similar to the AllInOneWindow
+        // attributes 'Main-Class': 'org.concord.biologica.ui.AllInOneView' // Vanilla version of AllInOneWindow
+        // attributes 'Main-Class': 'org.concord.biologica.ui.BioLogicaFrame' // "Practice" tools for BioLogica
+        // attributes 'Main-Class': 'org.concord.biologica.ui.VirtualFamilyView' // Simulates accumulated mutations over generations
+    }
+	from {
+		configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+	}
+}
+

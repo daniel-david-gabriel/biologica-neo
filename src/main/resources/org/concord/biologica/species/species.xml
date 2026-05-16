@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="us-ascii"?>
+
+<species-list>
+<species name="Dragon" file="dragonmf1.xml"></species>
+<species name="Pisum Sativum" file="pisum.xml"></species>
+<species name="Budgie" file="budgie.xml"></species>
+<species name="Hamster" file="hamster.xml"></species>
+</species-list>
+
