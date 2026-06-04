@@ -14,29 +14,56 @@
 
 package org.concord.biologica.ui;
 
-import java.lang.*;
-import java.util.*;
-import java.awt.*;
-import java.awt.event.*;
-import java.awt.image.*;
-
-import java.io.File;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-
-import javax.swing.*;
-import javax.swing.border.*;
-import javax.swing.event.*;
-import javax.swing.filechooser.*;
-
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.GridLayout;
+import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
+import java.awt.image.ImageObserver;
 import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeSupport;
 import java.beans.PropertyChangeListener;
+import java.io.File;
+import java.util.Enumeration;
 
-import org.concord.biologica.engine.*;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JFileChooser;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
+import javax.swing.JToggleButton;
+import javax.swing.ScrollPaneConstants;
+import javax.swing.border.BevelBorder;
+import javax.swing.event.MenuEvent;
+import javax.swing.event.MenuListener;
+
+import org.concord.biologica.engine.EngineObject;
+import org.concord.biologica.engine.EngineProp;
+import org.concord.biologica.engine.EngineStrings;
+import org.concord.biologica.engine.Family;
+import org.concord.biologica.engine.IChromosome;
+import org.concord.biologica.engine.Organism;
+import org.concord.biologica.engine.OrganismAllele;
+import org.concord.biologica.engine.OrganismAllelePair;
+import org.concord.biologica.engine.OrganismChromosomePair;
+import org.concord.biologica.engine.PathStrings;
+import org.concord.biologica.engine.Species;
+import org.concord.biologica.engine.SpeciesImage;
+import org.concord.biologica.engine.World;
+
+import com.gabriel.ui.AllInOneWindow;
+import com.gabriel.ui.EnvironmentWindow;
+import com.gabriel.util.BioLogicaProperties;
 
 /**
  * This class represents a view which contains and acts as a parent or manager of all
@@ -88,6 +115,10 @@ implements ActionListener, MenuListener, ItemListener, PropertyChangeListener, I
     static private final String cmdSexPane              = "CT";
     static private final String cmdChromosomePane       = "CU";
     static private final String cmdDNAPane              = "CV";
+    
+    // New for neo mode. It checks to see if the first letter is C,
+    // but the limitation of 2 characters isn't checked...
+    static private final String cmdSimulationMode       = "CSIM";
 
     static private final String cmdReportCollectMemory  = "CW";
     static private final String cmdReportFreeMemory     = "CX";
@@ -236,6 +267,10 @@ implements ActionListener, MenuListener, ItemListener, PropertyChangeListener, I
     private JToggleButton objectPropertiesViewToggleButton;
     private JToggleButton chromosomeViewToggleButton;
     private JToggleButton dnaViewToggleButton;
+    
+    // New for Neo mode
+    private JToggleButton simulationModeToggleButton;
+    private EnvironmentWindow environmentWindow;
 
     // Main panel in center of window
     private JPanel mainPanel;
@@ -259,9 +294,6 @@ implements ActionListener, MenuListener, ItemListener, PropertyChangeListener, I
     private DNAView dnaView;
     private JFileChooser fileChooser;
     private ToolView toolView;
-    
-    // New?
-    private EnvironmentView environmentView;
 
     // Booleans indicating which views are visible in normal window mode
     private boolean treePaneVisible;
@@ -399,10 +431,6 @@ implements ActionListener, MenuListener, ItemListener, PropertyChangeListener, I
         toolView.addView(pedigreeView);
         toolView.addView(multipleOrganismView);
         toolView.addView(sexView);
-        
-        environmentView = new EnvironmentView();
-        environmentView.setAgeLimit(99);
-        environmentView.setBounds(0, 0, 600, 800);
 
         worldStartPath = new File(PathStrings.getWorldsDirectory());
         fileChooser = new JFileChooser();
@@ -729,6 +757,18 @@ implements ActionListener, MenuListener, ItemListener, PropertyChangeListener, I
         dnaViewToggleButton.setToolTipText("Show/Hide DNA Pane");
         dnaViewToggleButton.setSelected(false);
         toolBar.add(dnaViewToggleButton);
+        
+        if (BioLogicaProperties.neoMode) {
+        	simulationModeToggleButton = new JToggleButton(new ImageIcon(AllInOneWindow.class.getClassLoader()
+      		      .getResource("com/gabriel/ui/sim.gif")));
+        	simulationModeToggleButton.setMargin(insets);
+        	simulationModeToggleButton.addActionListener(this);
+        	simulationModeToggleButton.setActionCommand(cmdSimulationMode);
+        	simulationModeToggleButton.setFocusPainted(false);
+        	simulationModeToggleButton.setToolTipText("Open simulation mode with the current world");
+        	simulationModeToggleButton.setSelected(false);
+            toolBar.add(simulationModeToggleButton);
+        }
     }
 
     /**
@@ -1493,6 +1533,38 @@ implements ActionListener, MenuListener, ItemListener, PropertyChangeListener, I
                     dnaPaneVisible = true;
                 }
                 setWindowMode(WINDOW_MODE_NORMAL);
+            }
+            else if (cmd.equals(cmdSimulationMode))
+            {
+            	environmentWindow = new EnvironmentWindow();
+                environmentWindow.setWorld(currentWorld);
+                environmentWindow.addWindowListener(new WindowListener() {
+        			@Override
+        			public void windowClosed(WindowEvent arg0) {}
+
+        			@Override
+        			public void windowActivated(WindowEvent arg0) {}
+
+        			@Override
+        			public void windowClosing(WindowEvent arg0) {
+        				//Reset state of environmentWindow to re-enabled button
+        				environmentWindow = null;
+        			}
+
+        			@Override
+        			public void windowDeactivated(WindowEvent arg0) {}
+
+        			@Override
+        			public void windowDeiconified(WindowEvent arg0) {}
+
+        			@Override
+        			public void windowIconified(WindowEvent arg0) {}
+
+        			@Override
+        			public void windowOpened(WindowEvent arg0) {}
+        		});
+                
+                simulationModeToggleButton.setEnabled(false);
             }
             else if (cmd.equals(cmdShowParentFamily))
             {
@@ -2278,6 +2350,12 @@ implements ActionListener, MenuListener, ItemListener, PropertyChangeListener, I
             objectPropertiesViewToggleButton.setEnabled(true);
             chromosomeViewToggleButton.setEnabled(true);
             dnaViewToggleButton.setEnabled(true);
+            
+            if (BioLogicaProperties.neoMode) {
+            	if (environmentWindow == null) {
+            		simulationModeToggleButton.setEnabled(true);
+            	}
+            }
         }
         else
         {
@@ -2327,6 +2405,10 @@ implements ActionListener, MenuListener, ItemListener, PropertyChangeListener, I
             objectPropertiesViewToggleButton.setEnabled(false);
             chromosomeViewToggleButton.setEnabled(false);
             dnaViewToggleButton.setEnabled(false);
+            
+            if (BioLogicaProperties.neoMode) {
+            	simulationModeToggleButton.setEnabled(false);
+            }
         }
 
         updatingState = false;

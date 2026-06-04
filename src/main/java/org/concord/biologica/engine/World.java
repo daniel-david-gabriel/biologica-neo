@@ -1,7 +1,7 @@
 //
 // Class : World
 //
-// Copyright © 1998, The Concord Consortium
+// Copyright ï¿½ 1998, The Concord Consortium
 //
 // Original Author: Bob Miner
 //
@@ -497,7 +497,7 @@ implements Serializable, DocumentHandler
     {
     	org.setLockedState(EngineObject.UNLOCKED);
         org.delete(false);
-        org = null;
+        //org = null;
       // Runtime.getRuntime().gc();
 
     }

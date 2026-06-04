@@ -1,5 +1,10 @@
 package org.concord.biologica.ui;
 
+import java.awt.Color;
+import java.awt.Frame;
+import java.awt.Graphics;
+import java.awt.GridLayout;
+import java.awt.Image;
 // Class : EnvironmentEng
 //
 // Copyright � 2002, The Concord Consortium
@@ -10,23 +15,37 @@ package org.concord.biologica.ui;
 // $Date: 2004/08/08 18:14:47 $
 // $Author: qliao $
 //
-import java.awt.event.*;
-import java.awt.Panel;
-import java.awt.Color;
-import java.awt.Graphics;
-import java.awt.Dimension;
-import java.awt.*;
-import javax.swing.*;
-import java.util.Vector;
-import java.util.Hashtable;
-import java.util.ArrayList;
-import java.util.Collection;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.InputEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionAdapter;
 import java.util.Enumeration;
-import java.lang.Math;
-import org.concord.shared.simulation.*;
-import org.concord.biologica.engine.*;
+import java.util.Hashtable;
+import java.util.Vector;
 
-public class EnvironmentView extends JPanel implements ActionListener, CCSimulator{
+import javax.swing.ButtonGroup;
+import javax.swing.JComponent;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.JToggleButton;
+import javax.swing.SwingUtilities;
+import javax.swing.Timer;
+
+import org.concord.biologica.engine.Environment;
+import org.concord.biologica.engine.Organism;
+import org.concord.biologica.engine.Rules;
+import org.concord.biologica.engine.Species;
+import org.concord.biologica.engine.Terrain;
+import org.concord.biologica.engine.TerrainEng;
+import org.concord.biologica.engine.Trait;
+import org.concord.biologica.engine.World;
+import org.concord.shared.simulation.CCSimulator;
+
+public class EnvironmentView extends JPanel implements ActionListener, CCSimulator {
 
 	private int maleOrganismNumber;
 	private int initialMaleOrganismNumber;
@@ -35,6 +54,7 @@ public class EnvironmentView extends JPanel implements ActionListener, CCSimulat
 	private int initialOrganismNumber;
 	private double initialSpeed = 5;
 	private World world;
+	private Environment environment;
 	private Species species;
 	private Trait trait;
 	private Vector organisms = new Vector();
@@ -100,11 +120,8 @@ public class EnvironmentView extends JPanel implements ActionListener, CCSimulat
 		}
    		addMouseListener(new MouseAdapter(){
    			public void mousePressed(MouseEvent e){
-   				System.out.println("mousePressed");
-   				System.out.println(e.toString());
-   				//if(((e.getModifiers() & InputEvent.BUTTON3_MASK) != 0) ||
-   				//   ((e.getModifiers() & InputEvent.CTRL_MASK) != 0))
-   				if(e.getButton() == MouseEvent.BUTTON1)
+   				if(((e.getModifiers() & InputEvent.BUTTON3_MASK) != 0) ||
+   				   ((e.getModifiers() & InputEvent.CTRL_MASK) != 0))
    				{
    					if (selectedUnits.size()>0)
    					{
@@ -139,7 +156,6 @@ public class EnvironmentView extends JPanel implements ActionListener, CCSimulat
 				
    			}
    			public void mouseClicked(MouseEvent e){
-   				System.out.println("mouseClicked");
 			    if (e.getClickCount() == 1) {
 				if (currentMode == ENVIRONMENT_CHANGE_LAND)
 				{
@@ -374,41 +390,49 @@ public class EnvironmentView extends JPanel implements ActionListener, CCSimulat
    		
    	}
 
-  	public void setEnvironmentSize(World wor,int w, int h, int envi)
+  	public void setEnvironment(World world, Environment environment)
   	{
-  		world = wor;
+  		if (environment.getWidth() < 1 || environment.getHeight() < 1) return;
+  		if (world == null) return;
+  		
+  		this.world = world;
+  		this.environment = environment;
   		
   		species = world.getCurrentSpecies();
   		System.out.println("currentSpecies : "+species);
+  		
   		rules.setDefaultRules();
+  		rules.setAgeLimit(99);
   		rules.setWorld(world);
   		
-  		ArrayList terrains = new ArrayList();
-  		Environment env = (Environment) wor.getEnvironments().nextElement();
-  		theWidth = env.getWidth();
-  		theHeight = env.getHeight();
-  		if (w==0 ||h==0) return;
-  		if(world == null) return;
+  		// Set to the first trait like in UI
+  		setTrait((Trait)species.getTraits().nextElement());
+  		
+  		
+  		theWidth = environment.getWidth();
+  		theHeight = environment.getHeight();
+  		
+  		int w = environment.getWidth();
+  		int h = environment.getHeight();
+  		
   		removeAll();
-  		 setLayout(new GridLayout(w,h));
-  		 enUnit = new org.concord.biologica.engine.TerrainEng[w][h];
+  		
+  		setLayout(new GridLayout(w,h));
+  		enUnit = new TerrainEng[w][h];
+  		
+  		int subW =(int)(this.getWidth()/w);
+	 	int subH = (int)(this.getHeight()/h);
   		 
-  		 System.out.println(this.getWidth());
-  		 
-  		 for (int i = 0;i<h;i++)
+  		 for(int i = 0; i<h; i++)
   		 {
-  		 	for(int j = 0; j<w;j++)
+  		 	for(int j = 0; j<w; j++)
   		 	{
-  		 		int subW =(int)(this.getWidth()/w);
-  		 		int subH = (int)(this.getHeight()/h);
-  		 		this.setSize(w*subW+1,h*subH+1);
-  		 		org.concord.biologica.engine.TerrainEng eu = new org.concord.biologica.engine.TerrainEng(this,rules,subW*j,subH*i,subW,subH);
-  		 		eu.setEnvironment(mapTerrainToEng(env.getTerrain(j,i)));
+  		 		TerrainEng eu = new TerrainEng(this,rules,subW*j,subH*i,subW,subH);
+  		 		eu.setEnvironment(mapTerrainToEng(environment.getTerrain(j,i)));
   		 		enUnit[j][i]=eu;            
   		 	}
   		 }
   		 setNeighbours();
-
   	}
   	
   	private int mapTerrainToEng(Terrain terrain) {
@@ -419,6 +443,14 @@ public class EnvironmentView extends JPanel implements ActionListener, CCSimulat
   		if (terrain.getName().toUpperCase().contains("MOUNTAIN")) return TerrainEng.ENVIRONMENT_MOUNTAIN;
   		
   		return TerrainEng.CHANGE_ENVIRONMENT;
+  	}
+  	
+  	public TerrainEng[][] getCurrentEnvironmentTerrain() {
+  		return enUnit;
+  	}
+  	
+  	public Environment getEnvironment() {
+  		return environment;
   	}
   	
   	public World getWorld()
@@ -739,6 +771,13 @@ public class EnvironmentView extends JPanel implements ActionListener, CCSimulat
   			setMaleOrganismNumber(0);
   			setFemaleOrganismNumber(0);
   		}
+  		
+  		if (org.containsFatalCharacteristic()) {
+			org.delete();
+			world.deleteOrganism(org);
+			
+			return;
+		}
   	}
 	public void removeOrganism(Organism org)
 	{
@@ -749,11 +788,12 @@ public class EnvironmentView extends JPanel implements ActionListener, CCSimulat
   		else if (org.getSex() == Organism.FEMALE)
   			setFemaleOrganismNumber(femaleOrganismNumber-1);
   			
+		
 		org.delete();
 		world.deleteOrganism(org);
+		
 
-                org = null;
-		//System.out.println("this org:"+org);
+		org = null;
 	}
 	
 	
@@ -825,14 +865,12 @@ public class EnvironmentView extends JPanel implements ActionListener, CCSimulat
     private Organism createOrganisms(int type,String genotype)
     {
 		
-		//Organism org = new Organism(world,type,genotype,species);
         Organism org= new Organism(world, "", species,type,genotype);
-                   // System.out.println("org : "+org.getSpecies());
 		while (org.containsFatalCharacteristic()){
 			org.delete();
 			world.deleteOrganism(org);
 			//org = new Organism(world,type,"",species);
-                            org= new Organism(world, "", species,type,genotype);
+            org= new Organism(world, "", species,type,genotype);
 		}
 		
 		//org.setSpeed(speed);
@@ -841,9 +879,8 @@ public class EnvironmentView extends JPanel implements ActionListener, CCSimulat
 		int w = Math.round((float)((theWidth-1)*Math.random()));
 		int h = Math.round((float)((theHeight-1)*Math.random()));
 
-		// This isn't necessary because it is added by setCurrentUnit
-		// enUnit[w][h].addOrganism(org);
-		org.setCurrentUnit((org.concord.biologica.engine.TerrainEng)(enUnit[w][h]));
+		TerrainEng currentUnit = enUnit[w][h];
+		org.setCurrentUnit(currentUnit);
 		org.setXloc((int)(enUnit[w][h].getX()+Math.round(Math.random()*(enUnit[w][h].getWidth()-org.getR()))));
 		org.setYloc((int)(enUnit[w][h].getY()+Math.round(Math.random()*(enUnit[w][h].getHeight()-org.getR()))));
 		int age =(int)Math.round(Math.random()*Organism.AGE_LIMIT);
@@ -1195,17 +1232,3 @@ public class EnvironmentView extends JPanel implements ActionListener, CCSimulat
 		rules.setAgeLimitForNormalInSickelEnv(age);
 	}
 }
-/*
-class LocalImageIcon
-extends ImageIcon
-{
-    public LocalImageIcon(String source)
-    {
-        super(PathStrings.getResource(source));
-    }
-    
-    public void waitForLoadImage()
-    {
-        loadImage(getImage());
-    }
-}*/

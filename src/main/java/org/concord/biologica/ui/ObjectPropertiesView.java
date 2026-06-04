@@ -1,7 +1,7 @@
 //
 // Class : ObjectPropertiesView - the view showing the properties of the selected object
 //
-// Copyright © 1998, The Concord Consortium
+// Copyright ï¿½ 1998, The Concord Consortium
 //
 // Original Author: Bob Miner
 //
@@ -29,6 +29,8 @@ import java.beans.PropertyChangeSupport;
 import java.beans.PropertyChangeListener;
 
 import org.concord.biologica.engine.*;
+
+import com.gabriel.util.BioLogicaProperties;
 
 /**
  * The object properties view of BioLogica.  This view will show the properties
@@ -1423,6 +1425,7 @@ implements ImageObserver, MouseListener, MouseMotionListener,
 
         // Listen for mouse clicks, but not mouse motion initially
         addMouseListener(this);
+        addMouseMotionListener(this);
     }
 
     /**
@@ -2054,6 +2057,7 @@ implements ImageObserver, MouseListener, MouseMotionListener,
     **/
     public void mousePressed(MouseEvent event)
     {
+    	System.out.println("mousePressed");
         // Ignore mouse events if object is not an Environment or Terrain
         // or current terrain is null
         if ((object instanceof Environment || object instanceof Terrain) == false)
@@ -2089,6 +2093,7 @@ implements ImageObserver, MouseListener, MouseMotionListener,
     **/
     public void mouseReleased(MouseEvent event)
     {
+    	System.out.println("mouseReleased");
     }
 
     /**
@@ -2096,6 +2101,30 @@ implements ImageObserver, MouseListener, MouseMotionListener,
     **/
     public void mouseDragged(MouseEvent event)
     {
+    	System.out.println("mouseDragged");
+    	if (BioLogicaProperties.neoMode) {
+    		// If showing an environment, determine if user is still holding button over environment area
+            if (object instanceof Environment)
+            {
+                int iRow, iColumn;
+                int x = event.getX();
+                int y = event.getY();
+        
+                if (x >= xEnvironmentLeft && x <= xEnvironmentRight &&
+                    y >= yEnvironmentTop && y <= yEnvironmentBottom)
+                {
+                    // Mouse pressed on environment picture, so determine row and column
+                    iColumn = (x - xEnvironmentLeft - 1) / xDelta;
+                    iRow = (y - yEnvironmentTop - 1) / yDelta;
+        
+                    // Set terrain in that block
+                    ((Environment)object).setTerrain(iColumn,iRow,currentTerrain);
+        
+                    // Update state
+                    updateState();
+                }
+            }
+    	}
     }
 
     /**
@@ -2103,6 +2132,7 @@ implements ImageObserver, MouseListener, MouseMotionListener,
     **/
     public void mouseMoved(MouseEvent event)
     {
+    	
     }
 
     /**
@@ -3528,6 +3558,13 @@ implements ImageObserver, MouseListener, MouseMotionListener,
         else if (cmd.equals(cmdCreateEnvironment))
         {
             Environment environment = new Environment((World)object, "?", 10, 10);
+            // If we are in neo mode, pre-populate the 4 standard Terrain types for the Environment simulator
+            if (BioLogicaProperties.neoMode) {
+            	new Terrain((World)object, "Land", Color.green).setLockedState(EngineObject.MANUAL_LOCKED);
+            	new Terrain((World)object, "Water", Color.blue).setLockedState(EngineObject.MANUAL_LOCKED);
+            	new Terrain((World)object, "Sand", Color.yellow).setLockedState(EngineObject.MANUAL_LOCKED);
+            	new Terrain((World)object, "Mountain", Color.lightGray).setLockedState(EngineObject.MANUAL_LOCKED);
+            }
         }
         else if (cmd.equals(cmdHaploid))
         {

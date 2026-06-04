@@ -2,7 +2,7 @@ package org.concord.biologica.engine;
 
 // Class : Rules
 //
-// Copyright © 2002, The Concord Consortium
+// Copyright ï¿½ 2002, The Concord Consortium
 //
 // Original Author: Qing Liao
 //

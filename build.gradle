@@ -7,6 +7,8 @@ sourceCompatibility = JavaVersion.VERSION_1_6
 targetCompatibility = JavaVersion.VERSION_1_6
 
 
+// Downloads the source code from the archive into a temp folder. Will skip if zip exists
+def sourceUrl = 'https://sourceforge.net/projects/pedagogica/files/OldFiles/pedagogica_02_18_05.zip/download'
 task downloadArchive() {
 	def tmpFolder = new File('tmp')
 	if (!tmpFolder.exists()) {
@@ -17,7 +19,7 @@ task downloadArchive() {
 		exec {
 			workingDir "tmp"
 			executable 'wget'
-			args 'https://sourceforge.net/projects/pedagogica/files/OldFiles/pedagogica_02_18_05.zip/download', '-O', 'pedagogica_02_18_05.zip'
+			args sourceUrl, '-O', 'pedagogica_02_18_05.zip'
 		}
 	}
 	else {
@@ -25,8 +27,8 @@ task downloadArchive() {
 	}
 }
 
+// Extracts the zip into the temp folder.
 def pedagogicaFolderPath = 'tmp/pedagogica_02_18_05/'
-
 task extractArchive(type: Copy) {
 	dependsOn.downloadArchive
 	
@@ -42,6 +44,7 @@ task extractArchive(type: Copy) {
 	into outputDir
 }
 
+// Copies required libraries from various locations in the temp folder into libs.
 def libs = [
 	[name: 'client.jar', source: 'Pedagogica/lib/'],
 	[name: 'domainsupport.jar', source: 'Pedagogica/lib/'],
@@ -53,9 +56,7 @@ def libs = [
 	[name: 'workspace.jar', source: 'Pedagogica/lib/'],
 	[name: 'xerces.jar', source: 'Pedagogica/thirdparty/']
 ]
-
 def libFolderPath = 'lib/'
-
 task copyLibs() {
 	dependsOn.extractArchive
 
@@ -80,7 +81,6 @@ task copyLibs() {
 }
 
 build.dependsOn tasks.copyLibs
-
 
 dependencies {
 	implementation files('lib/client.jar')
@@ -111,4 +111,3 @@ jar {
 		configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) }
 	}
 }
-

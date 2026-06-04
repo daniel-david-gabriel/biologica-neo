@@ -1,7 +1,7 @@
 //
 // Class : TreeViewNode
 //
-// Copyright © 1998, The Concord Consortium
+// Copyright ï¿½ 1998, The Concord Consortium
 //
 // Original Author: Bob Miner
 //
@@ -432,7 +432,11 @@ implements PropertyChangeListener
 
 			case ORGANISM_NODE_TYPE:
 				organism = (Organism) getUserObject();
-				return organism.getNumberOfOrganismChromosomePairs();
+				try {
+					return organism.getNumberOfOrganismChromosomePairs();
+				} catch(ObjectDeletedException objectDeletedException) {
+					return 0;
+				}
 
 			case ORGANISM_CHROMOSOME_NODE_TYPE:
 				organismChromosome = (OrganismChromosome) getUserObject();
@@ -440,7 +444,11 @@ implements PropertyChangeListener
 
 			case ORGANISM_CHROMOSOME_PAIR_NODE_TYPE:
 				organismChromosomePair = (OrganismChromosomePair) getUserObject();
-				return organismChromosomePair.getNumberOfOrganismAllelePairs();
+				try {
+					return organismChromosomePair.getNumberOfOrganismAllelePairs();
+				} catch(ObjectDeletedException objectDeletedException) {
+					return 0;
+				}
 
 			case SPECIES_ALLELE_NODE_TYPE:
 			case RULE_NODE_TYPE:
